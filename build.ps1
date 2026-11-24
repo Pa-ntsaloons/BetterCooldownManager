@@ -1,0 +1,49 @@
+# Builds a CurseForge-ready zip: releases\BetterCooldownManager-<version>.zip
+# The zip contains a single "BetterCooldownManager" folder with only the files the game needs.
+# Usage (from the project folder):  powershell -ExecutionPolicy Bypass -File .\build.ps1
+
+$ErrorActionPreference = 'Stop'
+$root = $PSScriptRoot
+$addon = 'BetterCooldownManager'
+
+# Files that ship in the addon (everything else in the repo stays out of the zip)
+$files = @('BetterCooldownManager.toc', 'Core.lua', 'LICENSE')
+
+# Read the version from the .toc
+$versionLine = Select-String -Path (Join-Path $root 'BetterCooldownManager.toc') -Pattern '^## Version:\s*(.+)$'
+if (-not $versionLine) { throw 'No "## Version:" line found in BetterCooldownManager.toc' }
+$version = $versionLine.Matches[0].Groups[1].Value.Trim()
+
+$releases = Join-Path $root 'releases'
+$zipPath = Join-Path $releases "$addon-$version.zip"
+New-Item -ItemType Directory -Force -Path $releases | Out-Null
+if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+
+# Write entries with forward slashes ("BetterCooldownManager/Core.lua"); Compress-Archive on
+# Windows PowerShell uses backslashes, which some unzip tools mis-extract.
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::Open($zipPath, 'Create')
+try {
+    foreach ($f in $files) {
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $zip, (Join-Path $root $f), "$addon/$f", 'Optimal') | Out-Null
+    }
+}
+finally {
+    $zip.Dispose()
+}
+Write-Host "Built $zipPath"
+
+# Pull this version's notes out of CHANGELOG.md and copy them for the CurseForge upload form
+$changelog = Get-Content (Join-Path $root 'CHANGELOG.md') -Raw
+$pattern = '(?ms)^## ' + [regex]::Escape($version) + '\s*\r?\n(.*?)(?=^## |\z)'
+$match = [regex]::Match($changelog, $pattern)
+if ($match.Success) {
+    $notes = $match.Groups[1].Value.Trim()
+    Write-Host "`n--- Changelog for $version ---`n$notes`n"
+    try { Set-Clipboard -Value $notes; Write-Host '(Copied to clipboard)' } catch { }
+}
+else {
+    Write-Warning "CHANGELOG.md has no '## $version' section. Add one before uploading."
+}
