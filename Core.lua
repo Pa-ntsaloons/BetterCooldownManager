@@ -241,11 +241,23 @@ local function GetTimerText(f, cd)
     fs = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     local blizz = cd.GetCountdownFontString and cd:GetCountdownFontString()
     if blizz then
-        local font, size, flags = blizz:GetFont()
-        if font then fs:SetFont(font, size, flags) end
-        local p, rel, rp, x, y = blizz:GetPoint(1)
-        if p then fs:SetPoint(p, holder, rp, x, y) else fs:SetPoint("CENTER") end
-        fs:SetTextColor(blizz:GetTextColor())
+        local okF, font, size, flags = pcall(blizz.GetFont, blizz)
+        if okF and type(font) == "string" and type(size) == "number" then
+            pcall(fs.SetFont, fs, font, size, flags or "")
+        end
+        -- Copy Blizzard's anchor when it's a normal one; otherwise just centre it.
+        local okP, p, _, rp, x, y = pcall(blizz.GetPoint, blizz, 1)
+        local placed = false
+        if okP and type(p) == "string" and type(rp) == "string"
+            and type(x) == "number" and type(y) == "number" and Readable(p, rp, x, y) then
+            placed = pcall(fs.SetPoint, fs, p, holder, rp, x, y)
+        end
+        if not placed then
+            fs:ClearAllPoints()
+            fs:SetPoint("CENTER")
+        end
+        local okC, r, g, b, a = pcall(blizz.GetTextColor, blizz)
+        if okC and type(r) == "number" and Readable(r, g, b, a) then fs:SetTextColor(r, g, b, a) end
     else
         fs:SetPoint("CENTER")
     end
@@ -402,8 +414,10 @@ local function CreateGroupIcon(parent)
             local cd = SafeCall(fr, "GetCooldownFrame")
             local blizz = cd and cd.GetCountdownFontString and cd:GetCountdownFontString()
             if blizz then
-                local font, size, flags = blizz:GetFont()
-                if font then f.Text:SetFont(font, size, flags) end
+                local okF, font, size, flags = pcall(blizz.GetFont, blizz)
+                if okF and type(font) == "string" and type(size) == "number" then
+                    pcall(f.Text.SetFont, f.Text, font, size, flags or "")
+                end
                 break
             end
         end

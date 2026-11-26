@@ -2,7 +2,7 @@
 ## Title: Better Cooldown Manager
 ## Notes: Improves Blizzard's Cooldown Manager: turn buffs into reminders that only show when they've expired or are about to, and show cooldowns only when they're ready.
 ## Author: Pa_nts
-## Version: 1.0.0
+## Version: 1.0.1
 ## SavedVariablesPerCharacter: BetterCooldownManagerCharDB
 ## Category: Combat
 ## IconTexture: Interface\Icons\INV_Misc_PocketWatch_01

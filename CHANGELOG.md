@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Fixed a "FontString:SetPoint()" error when a new buff appeared in Tracked Buffs (for example after opening a crate)
+
 ## 1.0.0
 
 First release.
